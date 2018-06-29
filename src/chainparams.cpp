@@ -117,7 +117,7 @@ public:
         pchMessageStart[3] = 0xdb;
         nDefaultPort = 28333;
         nPruneAfterHeight = 100000;
-        genesis.nOffset   = ArithToUint256(0);
+        genesis.nOffset.SetNull();
 
         genesis = CreateGenesisBlock(1392079741, MinPrimeSizeCompacted, 1, 0 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
@@ -300,7 +300,7 @@ public:
         pchMessageStart[3] = 0xda;
         nDefaultPort = 18444;
         nPruneAfterHeight = 1000;
-        genesis.nOffset   = ArithToUint256(0);
+        genesis.nOffset.SetNull();
 
         genesis = CreateGenesisBlock(1296688602, 0x207fffff, 1, 0 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
