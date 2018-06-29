@@ -1,13 +1,15 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2017 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Riecoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_PRIMITIVES_BLOCK_H
-#define BITCOIN_PRIMITIVES_BLOCK_H
+#ifndef RIECOIN_PRIMITIVES_BLOCK_H
+#define RIECOIN_PRIMITIVES_BLOCK_H
 
+#include <riecoin.h>
 #include <primitives/transaction.h>
 #include <serialize.h>
+#include <arith_uint256.h>
 #include <uint256.h>
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
@@ -17,16 +19,18 @@
  * in the block is a special one that creates a new coin owned by the creator
  * of the block.
  */
+
 class CBlockHeader
 {
 public:
     // header
-    int32_t nVersion;
+    static const int CURRENT_VERSION=2;
+    int nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+    bitsType nBits;
+    int64_t nTime;
+    offsetType nOffset;
 
     CBlockHeader()
     {
@@ -38,21 +42,19 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(this->nVersion);
+        nVersion = this->nVersion;
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
         READWRITE(nBits);
-        READWRITE(nNonce);
+        READWRITE(nOffset);
     }
 
     void SetNull()
     {
-        nVersion = 0;
-        hashPrevBlock.SetNull();
-        hashMerkleRoot.SetNull();
+        nVersion = CBlockHeader::CURRENT_VERSION;
         nTime = 0;
         nBits = 0;
-        nNonce = 0;
     }
 
     bool IsNull() const
@@ -61,7 +63,7 @@ public:
     }
 
     uint256 GetHash() const;
-
+    uint256 GetHashForPoW() const;
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;
@@ -77,6 +79,7 @@ public:
 
     // memory only
     mutable bool fChecked;
+    mutable std::vector<uint256> vMerkleTree;
 
     CBlock()
     {
@@ -86,14 +89,14 @@ public:
     CBlock(const CBlockHeader &header)
     {
         SetNull();
-        *((CBlockHeader*)this) = header;
+        *(static_cast<CBlockHeader*>(this)) = header;
     }
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(*(CBlockHeader*)this);
+        READWRITEAS(CBlockHeader, *this);
         READWRITE(vtx);
     }
 
@@ -101,7 +104,7 @@ public:
     {
         CBlockHeader::SetNull();
         vtx.clear();
-        fChecked = false;
+        vMerkleTree.clear();
     }
 
     CBlockHeader GetBlockHeader() const
@@ -112,10 +115,21 @@ public:
         block.hashMerkleRoot = hashMerkleRoot;
         block.nTime          = nTime;
         block.nBits          = nBits;
-        block.nNonce         = nNonce;
+        block.nOffset        = nOffset;
         return block;
     }
 
+    uint256 BuildMerkleTree() const;
+
+    const uint256 &GetTxHash(unsigned int nIndex) const {
+        assert(vMerkleTree.size() > 0); // BuildMerkleTree must have been called first
+        assert(nIndex < vtx.size());
+        return vMerkleTree[nIndex];
+    }
+
+    std::vector<uint256> GetMerkleBranch(int nIndex) const;
+    static uint256 CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex);
+    void print() const;
     std::string ToString() const;
 };
 
@@ -152,4 +166,4 @@ struct CBlockLocator
     }
 };
 
-#endif // BITCOIN_PRIMITIVES_BLOCK_H
+#endif // RIECOIN_PRIMITIVES_BLOCK_H

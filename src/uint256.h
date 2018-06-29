@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2017 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Riecoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_UINT256_H
-#define BITCOIN_UINT256_H
+#ifndef RIECOIN_UINT256_H
+#define RIECOIN_UINT256_H
 
 #include <assert.h>
 #include <cstring>
@@ -76,6 +76,11 @@ public:
     unsigned int size() const
     {
         return sizeof(data);
+    }
+
+    unsigned int GetLow32() const
+    {
+        return data[0];
     }
 
     uint64_t GetUint64(int pos) const
@@ -156,4 +161,4 @@ inline uint256 uint256S(const std::string& str)
     return rv;
 }
 
-#endif // BITCOIN_UINT256_H
+#endif // RIECOIN_UINT256_H

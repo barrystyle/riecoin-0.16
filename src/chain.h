@@ -1,14 +1,15 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2017 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Riecoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_CHAIN_H
-#define BITCOIN_CHAIN_H
+#ifndef RIECOIN_CHAIN_H
+#define RIECOIN_CHAIN_H
 
 #include <arith_uint256.h>
+#include <bignum.h>
+#include <consensus/params.h>
 #include <primitives/block.h>
-#include <pow.h>
 #include <tinyformat.h>
 #include <uint256.h>
 
@@ -91,7 +92,7 @@ struct CDiskBlockPos
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(VARINT(nFile));
+        READWRITE(VARINT(nFile, VarIntMode::NONNEGATIVE_SIGNED));
         READWRITE(VARINT(nPos));
     }
 
@@ -207,11 +208,12 @@ public:
     uint32_t nStatus;
 
     //! block header
-    int32_t nVersion;
+    static const int CURRENT_VERSION=2;
+    int nVersion;
     uint256 hashMerkleRoot;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+    bitsType nBits;
+    int64_t nTime;
+    offsetType nOffset;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -239,12 +241,23 @@ public:
         hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
-        nNonce         = 0;
+        nOffset        = offsetType();
     }
 
     CBlockIndex()
     {
         SetNull();
+    }
+
+    CBigNum GetBlockWork() const
+    {
+        CBigNum bnWork;
+        CBigNum bnWork2;
+        bnWork.SetCompact(nBits);
+        bnWork2 = bnWork * bnWork;
+        bnWork2 *= bnWork2;
+        bnWork2 *= bnWork2;
+        return bnWork2*bnWork;
     }
 
     explicit CBlockIndex(const CBlockHeader& block)
@@ -255,7 +268,7 @@ public:
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
         nBits          = block.nBits;
-        nNonce         = block.nNonce;
+        nOffset        = block.nOffset;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -285,7 +298,7 @@ public:
         block.hashMerkleRoot = hashMerkleRoot;
         block.nTime          = nTime;
         block.nBits          = nBits;
-        block.nNonce         = nNonce;
+        block.nOffset        = nOffset;
         return block;
     }
 
@@ -386,13 +399,13 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         int _nVersion = s.GetVersion();
         if (!(s.GetType() & SER_GETHASH))
-            READWRITE(VARINT(_nVersion));
+            READWRITE(VARINT(_nVersion, VarIntMode::NONNEGATIVE_SIGNED));
 
-        READWRITE(VARINT(nHeight));
+        READWRITE(VARINT(nHeight, VarIntMode::NONNEGATIVE_SIGNED));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
         if (nStatus & (BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO))
-            READWRITE(VARINT(nFile));
+            READWRITE(VARINT(nFile, VarIntMode::NONNEGATIVE_SIGNED));
         if (nStatus & BLOCK_HAVE_DATA)
             READWRITE(VARINT(nDataPos));
         if (nStatus & BLOCK_HAVE_UNDO)
@@ -404,7 +417,7 @@ public:
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
         READWRITE(nBits);
-        READWRITE(nNonce);
+        READWRITE(nOffset);
     }
 
     uint256 GetBlockHash() const
@@ -415,7 +428,7 @@ public:
         block.hashMerkleRoot  = hashMerkleRoot;
         block.nTime           = nTime;
         block.nBits           = nBits;
-        block.nNonce          = nNonce;
+        block.nOffset         = nOffset;
         return block.GetHash();
     }
 
@@ -491,4 +504,4 @@ public:
     CBlockIndex* FindEarliestAtLeast(int64_t nTime) const;
 };
 
-#endif // BITCOIN_CHAIN_H
+#endif // RIECOIN_CHAIN_H
