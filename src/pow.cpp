@@ -65,15 +65,9 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         return MinPrimeSizeCompacted;
 
     // Only change once per interval
-    if ((pindexLast->nHeight+1) % consensusParams.DifficultyAdjustmentInterval() != 0)
-    {
-        LogPrintf("* PASSED once per interval test\n");
-        if( isAfterFork1( pindexLast->nHeight+1, consensusParams ) )
-        {
-                LogPrintf("* PASSED isAfterFork test\n");
-                if( isSuperblock(pindexLast->nHeight+1, consensusParams) )
-                {
-                        LogPrintf("* PASSED isSuperblock test\n");
+    if ((pindexLast->nHeight+1) % consensusParams.DifficultyAdjustmentInterval() != 0) {
+        if( isAfterFork1( pindexLast->nHeight+1, consensusParams ) ) {
+                if( isSuperblock(pindexLast->nHeight+1, consensusParams) ) {
                         CBigNum bnNewPow;
                         bnNewPow.SetCompact(pindexLast->nBits);
                         bnNewPow *= 95859; // superblock is 4168/136 times more difficult
@@ -81,9 +75,6 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
                         LogPrintf("GetNextWorkRequired superblock difficulty:  %08x  %s\n", bnNewPow.GetCompact(), bnNewPow.getuint256().ToString());
                         return bnNewPow.GetCompact();
                 } else if( isSuperblock(pindexLast->nHeight+1-1, consensusParams) ) {
-                LogPrintf("* PASSED fell through to non isSuperblock\n"); 
-                //debug
-                LogPrintf("diff = %08X\n", pindexLast->pprev->nBits);
                 return pindexLast->pprev->nBits;
             }
         }
@@ -104,13 +95,8 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
                 return pindex->nBits;
             }
         }
-        LogPrintf("* PASSED fell through to DiffAdjInterval fail\n");
-        //debug
-        LogPrintf("diff = %08X\n", pindexLast->nBits);
         return pindexLast->nBits;
     }
-
-    LogPrintf("* PASSED made it here\n");
 
     // Go back by what we want to be nTargetTimespan worth of blocks
     const CBlockIndex* pindexFirst = pindexLast;
